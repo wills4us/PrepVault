@@ -1,8 +1,0 @@
-
-# Move file into folder
-mv users.csv data/users.csv
-
-# Stage and commit
-git add data/users.csv
-git commit -m "Moved users.csv into data folder"
-git push
