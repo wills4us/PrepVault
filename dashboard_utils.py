@@ -40,11 +40,6 @@ def show_progress_summary(username):
 
 # --- Helpers ---
 
-def generate_mock_rating(response):
-    # Example implementation
-    if not response:
-        return 0
-    return len(response.split()) / 10  # Dummy logic
 
 def get_latest_resume_score(username):
     if not os.path.exists(RESUME_FILE):
