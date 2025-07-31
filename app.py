@@ -6,7 +6,7 @@ from dashboard import show_dashboard
 from login_screen import show_login
 from resume_analyzer import show_resume_review
 from my_profile import show_profile
-from mock_interview import show_mock_interview
+
 
 
 # --- App Config ---
@@ -61,7 +61,7 @@ elif menu == "Resume Analyzer":
 
 elif menu == "Mock Interview":
     if st.session_state.username:
-        from mock_interview import show_interview_simulator
+        from mock_interview import show_mock_interview
         show_interview_simulator(st.session_state.username)
     else:
         st.warning("Please log in to access mock interviews.")
