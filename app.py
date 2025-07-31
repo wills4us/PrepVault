@@ -5,7 +5,6 @@ import os
 from dashboard import show_dashboard
 from login_screen import show_login
 from resume_analyzer import show_resume_review
-from mock_interview import show_mock_interview
 from my_profile import show_profile
 
 # --- App Config ---
@@ -60,7 +59,8 @@ elif menu == "Resume Analyzer":
 
 elif menu == "Mock Interview":
     if st.session_state.username:
-        from mock_interview import show_mock_interview  # ✅ FIX: Import here to prevent circular error
+        import docx2txt  # <- If needed here
+        from mock_interview import show_mock_interview  # <- FIX: Import only when needed
         show_mock_interview(st.session_state.username)
     else:
         st.warning("Please log in to access mock interviews.")
