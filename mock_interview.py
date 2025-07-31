@@ -2,6 +2,7 @@
 import streamlit as st
 import random
 import pandas as pd
+import os
 from datetime import datetime
 
 ROLE_QUESTIONS = {
@@ -10,10 +11,10 @@ ROLE_QUESTIONS = {
         "Explain the steps you take when cleaning a dataset.",
         "How would you handle missing values in a dataset?",
         "Describe a project where you used data visualization to drive decisions.",
-        "What is the difference between correlation and causation?"
-        "How do you approach cleaning and preparing a large dataset for analysis?"
-        "Can you describe a time you used data to solve a business problem or make a recommendation?"
-        "How do you handle missing or inconsistent data in your analysis?"
+        "What is the difference between correlation and causation?",
+        "How do you approach cleaning and preparing a large dataset for analysis?",
+        "Can you describe a time you used data to solve a business problem or make a recommendation?",
+        "How do you handle missing or inconsistent data in your analysis?",
         "What’s the most complex dashboard or report you’ve built, and how did it support decision-making?"
     ],
     "Data Scientist": [
@@ -21,21 +22,20 @@ ROLE_QUESTIONS = {
         "What’s your approach to feature engineering?",
         "How do you evaluate the performance of a machine learning model?",
         "Describe a project where you used machine learning to solve a problem.",
-        "What’s the difference between overfitting and underfitting?"
-        "How do you ensure your model is not overfitting?"
-        "Tell me about a time when your analysis or model directly influenced a business decision."
+        "What’s the difference between overfitting and underfitting?",
+        "How do you ensure your model is not overfitting?",
+        "Tell me about a time when your analysis or model directly influenced a business decision.",
         "Describe a project where you built a predictive model. What was the goal, and how did you evaluate its performance?"
-        
     ],
     "Python Developer": [
         "What are Python decorators and how are they used?",
         "Explain the difference between a list, tuple, and set.",
         "How do you handle exceptions in Python?",
         "Describe your experience with web frameworks like Flask or Django.",
-        "What are Python generators and why are they useful?"
-        "What are Python’s key data types, and when would you use each one (list, tuple, set, dictionary)?"
-        "Can you explain the difference between deep copy and shallow copy in Python?"
-        "Describe a project where you used Python to automate a task or process."
+        "What are Python generators and why are they useful?",
+        "What are Python’s key data types, and when would you use each one (list, tuple, set, dictionary)?",
+        "Can you explain the difference between deep copy and shallow copy in Python?",
+        "Describe a project where you used Python to automate a task or process.",
         "How do you manage dependencies and environments in a Python project?"
     ],
     "Customer Care Assistant": [
@@ -61,7 +61,6 @@ ROLE_QUESTIONS = {
     ]
 }
 
-# Offline rule-based follow-up system
 FOLLOWUP_TEMPLATES = [
     "Can you provide an example to support your answer?",
     "How has this skill helped you in a past experience?",
@@ -77,7 +76,6 @@ FEEDBACK_TIPS = [
     "Highlight specific tools or metrics to support your response.",
     "Avoid generic responses—tailor them to the role you're applying for."
 ]
-
 
 def show_mock_interview(username):
     st.subheader("🎤 AI Interview Simulator")
@@ -124,7 +122,7 @@ def show_mock_interview(username):
                         feedback = generate_followup(role, response)
                         rating = generate_mock_rating(response)
 
-                        save_interview_score(username, role, question, response, feedback, rating)
+                        save_response(username, role, question, response, rating, feedback)
 
                         st.success("✅ Response saved.")
                         st.markdown(f"🧠 **AI Feedback:** {feedback}")
@@ -153,6 +151,15 @@ def generate_feedback(response):
     else:
         return "Well-structured response. Consider refining the flow and staying concise."
 
+def generate_mock_rating(response):
+    words = len(response.split())
+    if words < 10:
+        return 1
+    elif words < 30:
+        return 3
+    else:
+        return 5
+
 def save_response(username, role, question, response, rating, feedback):
     file_path = "data/interview_scores.csv"
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -177,7 +184,6 @@ def save_response(username, role, question, response, rating, feedback):
     df.to_csv(file_path, index=False)
 
 def generate_followup(role, response):
-    # Simple placeholder AI-like feedback based on response length
     if not response.strip():
         return "You didn't provide a response. Please try to give an example next time."
 
@@ -189,4 +195,3 @@ def generate_followup(role, response):
         return "Nice point on challenges. It could be stronger with a STAR (Situation, Task, Action, Result) structure."
     else:
         return "Good response. You can make it even better by being more specific or structured."
-
