@@ -12,12 +12,6 @@ from dashboard_utils import show_profile_overview, show_progress_summary
 # Trigger notification generation on dashboard load
 check_and_generate_notifications()
 
-logo_path = "assets/logo.png"
-if os.path.exists(logo_path):
-    st.sidebar.image(logo_path, width=120)
-else:
-    st.sidebar.warning("Logo not found. Please upload 'assets/logo.png'")
-
 
 INTERVIEW_LOG = "data/interview_scores.csv"
 
@@ -86,9 +80,15 @@ def show_dashboard(name_input):
     username = name_input
     
     # --- Sidebar ---
-    st.sidebar.image("assets/logo.png", width=120)
-    st.sidebar.markdown(f"👤 **{username.title()}**")
-    st.sidebar.title(f"👋 Welcome, {username}")
+    logo_path = "assets/logo.png"
+    if os.path.exists(logo_path):
+        st.sidebar.image(logo_path, width=120)
+    else:
+        st.sidebar.warning("⚠️ Logo not found. Please upload 'assets/logo.png'")
+        st.sidebar.markdown("### 🚀 PrepVault")
+
+        st.sidebar.markdown(f"👤 **{username.title()}**")
+        st.sidebar.title(f"👋 Welcome, {username}")
 
     with st.expander("📈 Mock Interview Summary"):
         show_interview_summary(username)
