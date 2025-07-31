@@ -50,8 +50,8 @@ def show_dashboard(name_input):
     st.sidebar.markdown(f"👤 **{username.title()}**")
     st.sidebar.title(f"👋 Welcome, {username}")
     
-        with st.expander("📈 Mock Interview Summary"):
-            show_interview_summary(name_input)
+    with st.expander("📈 Mock Interview Summary"):
+        show_interview_summary(name_input)
     
     tab = st.sidebar.selectbox("Choose a tab", [
         "Profile Overview",
