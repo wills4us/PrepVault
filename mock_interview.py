@@ -77,22 +77,79 @@ def generate_mock_rating(user_response):
     avg_score = (length_score + quality_score) / 2
     return round(avg_score, 1)
 
-def show_interview_simulator():
+def show_interview_simulator(username):
     st.subheader("🎤 AI Interview Simulator")
-    st.markdown("Select a role to begin your simulated interview. AI will ask relevant questions for practice.")
-
+    st.markdown(f"Hello **{username.title()}**, let's begin your personalized mock interview.")
+    
     role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()))
+    
+    if 'asked_questions' not in st.session_state:
+        st.session_state.asked_questions = []
+    if 'current_question' not in st.session_state:
+        st.session_state.current_question = ""
+    if 'role_selected' not in st.session_state:
+        st.session_state.role_selected = ""
+    if 'completed_questions' not in st.session_state:
+        st.session_state.completed_questions = 0
 
-    if st.button("Start Interview"):
-        st.markdown("---")
-        st.markdown(f"### 🔹 Interview Questions for **{role}**")
-        questions = ROLE_QUESTIONS.get(role, [])
-        selected_questions = random.sample(questions, k=min(3, len(questions)))
-        for idx, q in enumerate(selected_questions):
-            st.write(f"**Q{idx+1}:** {q}")
-            user_response = st.text_area(f"Your Answer to Q{idx+1}", key=f"response_{idx}")
-            if user_response:
-                feedback = generate_followup(role, user_response)
-                rating = generate_mock_rating(user_response)
-                st.markdown(f"✅ **AI Feedback:**\n{feedback}")
-                st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
+    if role != st.session_state.role_selected:
+        # Reset if role changes
+        st.session_state.asked_questions = []
+        st.session_state.current_question = ""
+        st.session_state.role_selected = role
+        st.session_state.completed_questions = 0
+
+    questions = ROLE_QUESTIONS.get(role, [])
+
+    # If 3 questions already done
+    if st.session_state.completed_questions >= 3:
+        st.success("✅ You've completed the mock interview.")
+        return
+
+    # Load question if empty
+    if st.session_state.current_question == "":
+        remaining = list(set(questions) - set(st.session_state.asked_questions))
+        if remaining:
+            st.session_state.current_question = random.choice(remaining)
+            st.session_state.asked_questions.append(st.session_state.current_question)
+
+    question = st.session_state.current_question
+    st.markdown(f"**Q{st.session_state.completed_questions + 1}: {question}**")
+
+    user_response = st.text_area("Your Answer", key=f"response_{st.session_state.completed_questions}")
+
+    if st.button("✅ Submit Answer"):
+        if not user_response.strip():
+            st.warning("Please provide a response.")
+        else:
+            feedback = generate_followup(role, user_response)
+            rating = generate_mock_rating(user_response)
+
+            # Save to CSV
+            save_interview_score(username, role, question, user_response, feedback, rating)
+
+            st.markdown(f"🧠 **AI Feedback:**\n{feedback}")
+            st.markdown(f"⭐ **Mock Rating:** `{rating} / 5`")
+
+            if st.button("➡️ Next Question"):
+                st.session_state.current_question = ""
+                st.session_state.completed_questions += 1
+
+def save_interview_score(username, role, question, response, feedback, score):
+    file = "data/interview_scores.csv"
+    os.makedirs("data", exist_ok=True)
+    if os.path.exists(file):
+        df = pd.read_csv(file)
+    else:
+        df = pd.DataFrame(columns=["Name", "Role", "Question", "Response", "Feedback", "Rating"])
+
+    new_row = {
+        "Name": username,
+        "Role": role,
+        "Question": question,
+        "Response": response,
+        "Feedback": feedback,
+        "Rating": score
+    }
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    df.to_csv(file, index=False)
