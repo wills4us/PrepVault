@@ -79,61 +79,51 @@ def generate_mock_rating(user_response):
 
 def show_interview_simulator(username):
     st.subheader("🎤 AI Interview Simulator")
-    st.markdown(f"Hello **{username.title()}**, let's begin your personalized mock interview.")
-    
-    role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()))
-    
-    if 'asked_questions' not in st.session_state:
-        st.session_state.asked_questions = []
-    if 'current_question' not in st.session_state:
-        st.session_state.current_question = ""
-    if 'role_selected' not in st.session_state:
-        st.session_state.role_selected = ""
-    if 'completed_questions' not in st.session_state:
-        st.session_state.completed_questions = 0
+    st.markdown("Select a role to begin your simulated interview. You will be asked questions one by one.")
 
-    if role != st.session_state.role_selected:
-        # Reset if role changes
-        st.session_state.asked_questions = []
-        st.session_state.current_question = ""
-        st.session_state.role_selected = role
-        st.session_state.completed_questions = 0
+    role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()), key="role_select")
 
-    questions = ROLE_QUESTIONS.get(role, [])
+    if "interview_state" not in st.session_state:
+        st.session_state.interview_state = {
+            "questions": [],
+            "current_index": 0,
+            "started": False,
+        }
 
-    # If 3 questions already done
-    if st.session_state.completed_questions >= 3:
-        st.success("✅ You've completed the mock interview.")
-        return
+    if st.button("Start Interview") or not st.session_state.interview_state["started"]:
+        questions = random.sample(ROLE_QUESTIONS.get(role, []), k=min(3, len(ROLE_QUESTIONS[role])))
+        st.session_state.interview_state.update({
+            "questions": questions,
+            "current_index": 0,
+            "started": True
+        })
 
-    # Load question if empty
-    if st.session_state.current_question == "":
-        remaining = list(set(questions) - set(st.session_state.asked_questions))
-        if remaining:
-            st.session_state.current_question = random.choice(remaining)
-            st.session_state.asked_questions.append(st.session_state.current_question)
+    if st.session_state.interview_state["started"]:
+        questions = st.session_state.interview_state["questions"]
+        index = st.session_state.interview_state["current_index"]
 
-    question = st.session_state.current_question
-    st.markdown(f"**Q{st.session_state.completed_questions + 1}: {question}**")
+        if index < len(questions):
+            q = questions[index]
+            st.markdown(f"**Question {index + 1} of {len(questions)}:** {q}")
+            user_response = st.text_area("Your Answer", key=f"response_{index}")
 
-    user_response = st.text_area("Your Answer", key=f"response_{st.session_state.completed_questions}")
+            if st.button("Submit Answer"):
+                if user_response.strip():
+                    feedback = generate_followup(role, user_response)
+                    rating = generate_mock_rating(user_response)
 
-    if st.button("✅ Submit Answer"):
-        if not user_response.strip():
-            st.warning("Please provide a response.")
-        else:
-            feedback = generate_followup(role, user_response)
-            rating = generate_mock_rating(user_response)
+                    # Save response
+                    save_interview_score(username, role, q, user_response, feedback, rating)
 
-            # Save to CSV
-            save_interview_score(username, role, question, user_response, feedback, rating)
+                    st.success("✅ Response saved.")
+                    st.markdown(f"🧠 **AI Feedback for {username}:**\n{feedback}")
+                    st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
 
-            st.markdown(f"🧠 **AI Feedback:**\n{feedback}")
-            st.markdown(f"⭐ **Mock Rating:** `{rating} / 5`")
-
-            if st.button("➡️ Next Question"):
-                st.session_state.current_question = ""
-                st.session_state.completed_questions += 1
+                    st.session_state.interview_state["current_index"] += 1
+                 else:
+                    st.warning("Please enter a response before submitting.")
+            else:
+                st.success("🎉 Interview completed! All responses have been recorded.")
 
 def save_interview_score(username, role, question, response, feedback, score):
     file = "data/interview_scores.csv"
