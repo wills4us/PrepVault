@@ -122,7 +122,7 @@ def show_interview_simulator(username):
                     st.session_state.interview_state["current_index"] += 1
                  else:
                     st.warning("Please enter a response before submitting.")
-            else:
+        else:
                 st.success("🎉 Interview completed! All responses have been recorded.")
 
 def save_interview_score(username, role, question, response, feedback, score):
