@@ -60,7 +60,7 @@ elif menu == "Resume Analyzer":
 elif menu == "Mock Interview":
     if st.session_state.username:
         from mock_interview import show_interview_simulator
-        show_interview_simulator()
+        show_interview_simulator(st.session_state.username)
     else:
         st.warning("Please log in to access mock interviews.")
 
