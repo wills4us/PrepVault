@@ -49,7 +49,6 @@ ROLE_QUESTIONS = {
     ]
 }
 
-# Offline rule-based follow-up system
 FOLLOWUP_TEMPLATES = [
     "Can you provide an example to support your answer?",
     "How has this skill helped you in a past experience?",
@@ -120,10 +119,10 @@ def show_interview_simulator(username):
                     st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
 
                     st.session_state.interview_state["current_index"] += 1
-                 else:
+                else:
                     st.warning("Please enter a response before submitting.")
         else:
-                st.success("🎉 Interview completed! All responses have been recorded.")
+            st.success("🎉 Interview completed! All responses have been recorded.")
 
 def save_interview_score(username, role, question, response, feedback, score):
     file = "data/interview_scores.csv"
