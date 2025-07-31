@@ -35,8 +35,6 @@ def show_interview_scores(username=None):
     st.markdown("---")
     st.download_button("📥 Download Your Interview Feedback", data=df.to_csv(index=False), file_name="interview_feedback.csv", mime="text/csv")
 
-
-
 def show_dashboard(name_input):
     import streamlit as st
     from resume_analyzer import show_resume_analysis
