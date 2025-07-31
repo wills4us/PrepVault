@@ -3,7 +3,6 @@ import os
 import pandas as pd
 from PyPDF2 import PdfReader
 from sentence_transformers import SentenceTransformer, util
-
 from pdf2image import convert_from_path
 import pytesseract
 from PIL import Image
@@ -70,6 +69,15 @@ def ai_match_resume_to_roles(resume_text):
         scores[role] = round(similarity * 100, 2)
     return sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
+def display_past_attempts(username):
+    df_path = os.path.join(UPLOAD_FOLDER, "resume_scores.csv")
+    if os.path.exists(df_path):
+        df = pd.read_csv(df_path)
+        user_df = df[df["username"] == username]
+        if not user_df.empty:
+            st.markdown("### 📂 Past Attempts")
+            st.dataframe(user_df.sort_values(by="match_score", ascending=False), use_container_width=True)
+
 def analyze_resume(username, job_role):
     uploaded_file = st.file_uploader("📄 Upload your Resume (PDF)", type=["pdf"])
     if uploaded_file:
@@ -106,17 +114,14 @@ def analyze_resume(username, job_role):
         else:
             st.warning("⚠️ Weak match. Consider revising your resume.")
 
-        # Suggest better match
         if best_match != job_role:
             st.markdown("### 💡 Better Match Suggestion")
             st.info(f"🔁 You may be a better fit for **{best_match}** (**{best_score}% match**)")
 
-        # Show top 3 matches
         st.markdown("#### 🧭 Top 3 Role Matches:")
         for role, score in ranked_roles[:3]:
             st.write(f"- **{role}**: {score}%")
 
-        # Show missing keywords
         missing = identify_missing_keywords(resume_text, job_role)
         if missing:
             st.markdown("### 🧩 Missing Keywords")
@@ -142,6 +147,9 @@ def analyze_resume(username, job_role):
         else:
             df = pd.DataFrame([result])
         df.to_csv(df_path, index=False)
+
+        # Show previous history
+        display_past_attempts(username)
 
 def show_resume_review(username):
     st.subheader("📊 AI Resume Analyzer")
