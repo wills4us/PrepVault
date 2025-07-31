@@ -175,3 +175,18 @@ def save_response(username, role, question, response, rating, feedback):
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
     df.to_csv(file_path, index=False)
+
+def generate_followup(role, response):
+    # Simple placeholder AI-like feedback based on response length
+    if not response.strip():
+        return "You didn't provide a response. Please try to give an example next time."
+
+    if len(response.split()) < 20:
+        return "Your answer is quite brief. Try expanding on your thoughts or giving examples."
+    elif "team" in response.lower():
+        return "Good mention of teamwork. Consider backing it with a scenario or outcome."
+    elif "challenge" in response.lower():
+        return "Nice point on challenges. It could be stronger with a STAR (Situation, Task, Action, Result) structure."
+    else:
+        return "Good response. You can make it even better by being more specific or structured."
+
