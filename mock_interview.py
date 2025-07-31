@@ -1,154 +1,94 @@
+# mock_interview.py
 import streamlit as st
 import random
-import os
 import pandas as pd
+from datetime import datetime
 
-# Predefined questions for each role
-ROLE_QUESTIONS = {
+QUESTION_BANK = {
     "Data Analyst": [
-        "Can you explain the difference between inner join and outer join in SQL?",
-        "How do you handle missing data when analyzing a dataset?",
-        "Which tools do you use for data visualization and why?",
-        "Describe a project where you uncovered an insight that changed a business decision.",
-        "How do you ensure the accuracy of your analysis?"
+        "What is the difference between INNER JOIN and LEFT JOIN in SQL?",
+        "Explain the steps you take when cleaning a dataset.",
+        "How would you handle missing values in a dataset?",
+        "Describe a project where you used data visualization to drive decisions.",
+        "What is the difference between correlation and causation?"
     ],
-    "Data Scientist": [
-        "Explain the difference between supervised and unsupervised learning.",
-        "What’s your approach to feature engineering?",
-        "How do you evaluate the performance of a machine learning model?",
-        "Describe a project where you used machine learning to solve a problem.",
-        "What’s the difference between overfitting and underfitting?"
-    ],
-    "Python Developer": [
-        "What are Python decorators and how are they used?",
-        "Explain the difference between a list, tuple, and set.",
-        "How do you handle exceptions in Python?",
-        "Describe your experience with web frameworks like Flask or Django.",
-        "What are Python generators and why are they useful?"
-    ],
-    "Customer Care Assistant": [
-        "How do you handle a difficult customer?",
-        "What strategies do you use to remain calm under pressure?",
-        "Describe a time you went above and beyond to assist a customer.",
-        "How do you handle repetitive tasks and remain motivated?",
-        "What would you do if you didn’t know how to answer a customer's question?"
-    ],
-    "Administrative Assistant": [
-        "How do you prioritize tasks when managing multiple deadlines?",
-        "Describe your experience with calendar management and scheduling.",
-        "How do you handle confidential information?",
-        "Describe a time you improved an administrative process.",
-        "What tools or software are you most comfortable using for admin work?"
-    ],
-    "HR": [
-        "How do you handle conflicts between employees?",
-        "Describe your experience with recruitment and onboarding.",
-        "What steps do you take to ensure HR policies are followed?",
-        "How do you maintain confidentiality in sensitive HR matters?",
-        "What’s your approach to employee engagement and retention?"
+    "Frontend Developer": [
+        "What is the Virtual DOM in React?",
+        "How do you manage component state in React?",
+        "Explain the difference between CSS Grid and Flexbox.",
+        "What are web accessibility best practices?",
+        "How do you optimize a website’s performance?"
     ]
 }
 
-# Offline rule-based feedback and follow-up
-FOLLOWUP_TEMPLATES = [
-    "Can you provide an example to support your answer?",
-    "How has this skill helped you in a past experience?",
-    "What challenges did you face and how did you overcome them?",
-    "What tools or methods did you use in that situation?",
-    "Would you do anything differently if faced with that again?"
-]
+def show_mock_interview(username):
+    st.title("🧠 AI-Powered Mock Interview")
 
-FEEDBACK_TIPS = [
-    "Try to provide a concrete example to make your response stronger.",
-    "Keep your answers concise but detailed.",
-    "Structure your answer using the STAR method (Situation, Task, Action, Result).",
-    "Highlight specific tools or metrics to support your response.",
-    "Avoid generic responses—tailor them to the role you're applying for."
-]
+    if "current_question" not in st.session_state:
+        st.session_state.current_question = None
+    if "role" not in st.session_state:
+        st.session_state.role = None
+    if "response" not in st.session_state:
+        st.session_state.response = ""
 
-def generate_followup(role, user_response):
-    if not user_response.strip():
-        return "No response entered."
-    return f"Follow-up: {random.choice(FOLLOWUP_TEMPLATES)}\nFeedback: {random.choice(FEEDBACK_TIPS)}"
+    st.markdown("This mock interview tool provides dynamic questions based on your selected role. Your responses will be rated and saved.")
 
-def generate_mock_rating(user_response):
-    length_score = min(len(user_response.strip()) // 50, 5)
-    quality_score = random.randint(2, 5)
-    avg_score = (length_score + quality_score) / 2
-    return round(avg_score, 1)
+    role = st.selectbox("Select your target role", list(QUESTION_BANK.keys()))
+    st.session_state.role = role
 
-def save_interview_score(username, role, question, response, feedback, score):
-    file = "data/interview_scores.csv"
-    os.makedirs("data", exist_ok=True)
-    if os.path.exists(file):
-        df = pd.read_csv(file)
+    if st.button("➡️ Next Question"):
+        st.session_state.current_question = random.choice(QUESTION_BANK[role])
+        st.session_state.response = ""
+
+    if st.session_state.current_question:
+        st.markdown(f"### ❓ {st.session_state.current_question}")
+        st.session_state.response = st.text_area("Your Answer", value=st.session_state.response, height=200)
+
+        if st.button("✅ Submit Answer"):
+            rating = random.randint(3, 5)  # Simulated rating for demo
+            feedback = generate_feedback(st.session_state.response)
+
+            save_response(
+                username=username,
+                role=st.session_state.role,
+                question=st.session_state.current_question,
+                response=st.session_state.response,
+                rating=rating,
+                feedback=feedback
+            )
+
+            st.success("Answer submitted and saved! ✅")
+            st.markdown(f"⭐ **AI Rating:** {rating}/5")
+            st.markdown(f"📝 **AI Feedback:** _{feedback}_")
+
+def generate_feedback(response):
+    length = len(response.split())
+    if length < 20:
+        return "Try elaborating more with examples or technical details."
+    elif length < 50:
+        return "Good effort. Include metrics, tools, or outcomes for a stronger answer."
     else:
-        df = pd.DataFrame(columns=["Name", "Role", "Question", "Response", "Feedback", "Rating"])
-    
+        return "Well-structured response. Consider refining the flow and staying concise."
+
+def save_response(username, role, question, response, rating, feedback):
+    file_path = "data/interview_scores.csv"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     new_row = {
+        "Username": username,
         "Name": username,
         "Role": role,
         "Question": question,
         "Response": response,
+        "Rating": rating,
         "Feedback": feedback,
-        "Rating": score
+        "Timestamp": timestamp
     }
 
-    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-    df.to_csv(file, index=False)
+    if not os.path.exists(file_path):
+        df = pd.DataFrame([new_row])
+    else:
+        df = pd.read_csv(file_path)
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
-def show_interview_simulator(username):
-    st.subheader("🎤 AI Interview Simulator")
-    st.markdown("Select a role to begin your simulated interview. Questions appear one-by-one after each answer.")
-
-    role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()), key="role_select")
-
-    if "interview_state" not in st.session_state:
-        st.session_state.interview_state = {
-            "questions": [],
-            "current_index": 0,
-            "started": False,
-            "response_saved": False,
-        }
-
-    state = st.session_state.interview_state
-
-    if st.button("Start Interview"):
-        state["questions"] = random.sample(ROLE_QUESTIONS.get(role, []), k=min(3, len(ROLE_QUESTIONS[role])))
-        state["current_index"] = 0
-        state["started"] = True
-        state["response_saved"] = False
-
-    if state["started"]:
-        questions = state["questions"]
-        index = state["current_index"]
-
-        if index < len(questions):
-            q = questions[index]
-            st.markdown(f"**Question {index + 1} of {len(questions)}:** {q}")
-            user_response = st.text_area("Your Answer", key=f"response_{index}")
-
-            if not state["response_saved"]:
-                if st.button("Submit Answer"):
-                    if user_response.strip():
-                        feedback = generate_followup(role, user_response)
-                        rating = generate_mock_rating(user_response)
-                        save_interview_score(username, role, q, user_response, feedback, rating)
-
-                        st.session_state.feedback = feedback
-                        st.session_state.rating = rating
-                        state["response_saved"] = True
-
-                        st.success("✅ Response saved.")
-                        st.markdown(f"🧠 **AI Feedback for {username}:**\n{feedback}")
-                        st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
-                    else:
-                        st.warning("Please enter a response before submitting.")
-            else:
-                st.markdown(f"🧠 **AI Feedback for {username}:**\n{st.session_state.feedback}")
-                st.markdown(f"⭐ **Mock Rating:** {st.session_state.rating} / 5")
-                if st.button("Next Question"):
-                    state["current_index"] += 1
-                    state["response_saved"] = False
-        else:
-            st.success("🎉 Interview completed! All responses have been recorded.")
+    df.to_csv(file_path, index=False)
