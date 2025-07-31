@@ -81,54 +81,66 @@ FEEDBACK_TIPS = [
 
 def show_mock_interview(username):
     st.subheader("🎤 AI Interview Simulator")
-    st.markdown("Select a role to begin your simulated interview. You will be asked questions one by one.")
+    st.markdown("Select a role to begin your simulated interview. You will be asked one question at a time.")
 
     role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()), key="role_select")
 
+    # Initialize interview state
     if "interview_state" not in st.session_state:
         st.session_state.interview_state = {
             "questions": [],
             "current_index": 0,
             "started": False,
-            "response": ""
+            "response": "",
+            "submitted": False
         }
 
+    # Start Interview
     if st.button("Start Interview"):
         questions = random.sample(ROLE_QUESTIONS.get(role, []), k=min(3, len(ROLE_QUESTIONS[role])))
-        st.session_state.interview_state.update({
+        st.session_state.interview_state = {
             "questions": questions,
             "current_index": 0,
             "started": True,
-            "response": ""
-        })
+            "response": "",
+            "submitted": False
+        }
 
+    # Interview in Progress
     if st.session_state.interview_state["started"]:
-        questions = st.session_state.interview_state["questions"]
-        index = st.session_state.interview_state["current_index"]
+        state = st.session_state.interview_state
+        index = state["current_index"]
+        questions = state["questions"]
 
         if index < len(questions):
-            q = questions[index]
-            st.markdown(f"**Question {index + 1} of {len(questions)}:** {q}")
-            user_response = st.text_area("Your Answer", value=st.session_state.interview_state.get("response", ""), key=f"response_{index}")
+            question = questions[index]
+            st.markdown(f"**Question {index + 1} of {len(questions)}:** {question}")
 
-            if st.button("Submit Answer"):
-                if user_response.strip():
-                    feedback = generate_followup(role, user_response)
-                    rating = generate_mock_rating(user_response)
+            response = st.text_area("📝 Your Answer", value=state.get("response", ""), key=f"response_{index}")
 
-                    save_interview_score(username, role, q, user_response, feedback, rating)
+            if not state["submitted"]:
+                if st.button("Submit Answer"):
+                    if response.strip():
+                        feedback = generate_followup(role, response)
+                        rating = generate_mock_rating(response)
 
-                    st.success("✅ Response saved.")
-                    st.markdown(f"🧠 **AI Feedback:** {feedback}")
-                    st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
+                        save_interview_score(username, role, question, response, feedback, rating)
 
-                    st.session_state.interview_state["response"] = ""
-                else:
-                    st.warning("Please enter a response before submitting.")
+                        st.success("✅ Response saved.")
+                        st.markdown(f"🧠 **AI Feedback:** {feedback}")
+                        st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
 
-            if st.button("Next Question"):
-                st.session_state.interview_state["current_index"] += 1
-                st.session_state.interview_state["response"] = ""
+                        state["submitted"] = True
+                        state["response"] = response
+                    else:
+                        st.warning("Please enter a response before submitting.")
+
+            elif state["submitted"]:
+                if st.button("Next Question"):
+                    state["current_index"] += 1
+                    state["response"] = ""
+                    state["submitted"] = False
+
         else:
             st.success("🎉 Interview completed! All responses have been recorded.")
 
