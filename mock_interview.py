@@ -1,4 +1,3 @@
-# mock_interview.py
 import streamlit as st
 import random
 import pandas as pd
@@ -62,83 +61,83 @@ FOLLOWUP_TEMPLATES = [
     "Would you do anything differently if faced with that again?"
 ]
 
-
 def show_mock_interview(username):
     st.subheader("🎤 AI Interview Simulator")
     st.markdown("Select a role to begin your simulated interview.")
-
     role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()), key="role_select")
 
-    # Initialize interview state
-    if "interview_state" not in st.session_state:
-        st.session_state.interview_state = {
-            "questions": [],
-            "current_index": 0,
+    # --- Initialize session state ---
+    if "interview" not in st.session_state:
+        st.session_state.interview = {
             "started": False,
-            "response": "",
-            "submitted": False
+            "questions": [],
+            "current": 0,
+            "responses": [],
+            "submitted": False,
+            "last_response": ""
         }
 
-    # Start Interview
-    if st.button("Start Interview"):
-        questions = random.sample(ROLE_QUESTIONS.get(role, []), k=min(3, len(ROLE_QUESTIONS[role])))
-        st.session_state.interview_state = {
-            "questions": questions,
-            "current_index": 0,
+    # --- Start interview ---
+    if st.button("🚀 Start Interview"):
+        st.session_state.interview = {
             "started": True,
-            "response": "",
-            "submitted": False
+            "questions": random.sample(ROLE_QUESTIONS[role], k=min(3, len(ROLE_QUESTIONS[role]))),
+            "current": 0,
+            "responses": [],
+            "submitted": False,
+            "last_response": ""
         }
 
-    # Interview in Progress
-    if st.session_state.interview_state["started"]:
-        state = st.session_state.interview_state
-        index = state["current_index"]
-        questions = state["questions"]
+    interview = st.session_state.interview
 
-        if index < len(questions):
-            question = questions[index]
-            st.markdown(f"**🧠 Question {index + 1} of {len(questions)}:** {question}")
-            response = st.text_area("📝 Your Answer", value=state.get("response", ""), key=f"response_{index}")
+    if interview["started"]:
+        current_idx = interview["current"]
+        questions = interview["questions"]
 
-            if not state["submitted"]:
-                if st.button("Submit Answer"):
+        if current_idx < len(questions):
+            current_question = questions[current_idx]
+            st.markdown(f"**🧠 Question {current_idx + 1} of {len(questions)}:** {current_question}")
+
+            response_key = f"response_{current_idx}"
+            response = st.text_area("📝 Your Answer", key=response_key, value=interview["last_response"])
+
+            if not interview["submitted"]:
+                if st.button("✅ Submit Answer"):
                     if response.strip():
                         feedback = generate_followup(role, response)
                         rating = generate_mock_rating(response)
-                        ideal_hint = generate_sample_ideal_answer(question)
+                        ideal_hint = generate_sample_ideal_answer(current_question)
 
-                        save_interview_score(username, role, question, response, feedback, rating)
+                        save_interview_score(username, role, current_question, response, feedback, rating)
 
                         st.success("✅ Response saved.")
-                        st.markdown(f"🧠 **AI Feedback:** {feedback}")
+                        st.markdown(f"💬 **AI Feedback:** {feedback}")
                         st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
                         st.markdown(f"💡 **Suggested Ideal Answer:** {ideal_hint}")
 
-                        state["submitted"] = True
-                        state["response"] = response
+                        interview["responses"].append(response)
+                        interview["submitted"] = True
+                        interview["last_response"] = response
                     else:
-                        st.warning("Please enter a response before submitting.")
+                        st.warning("Please provide a response before submitting.")
             else:
-                if st.button("Next Question"):
-                    state["current_index"] += 1
-                    state["response"] = ""
-                    state["submitted"] = False
+                if st.button("➡️ Next Question"):
+                    interview["current"] += 1
+                    interview["submitted"] = False
+                    interview["last_response"] = ""
         else:
-            st.success("🎉 Interview completed! All responses have been recorded.")
-
+            st.success("🎉 Interview Completed! All responses have been recorded.")
 
 def generate_mock_rating(response):
-    word_count = len(response.strip().split())
-    if word_count < 10:
+    wc = len(response.strip().split())
+    if wc < 10:
         return 2
-    elif word_count < 25:
+    elif wc < 25:
         return 3
-    elif word_count < 50:
+    elif wc < 50:
         return 4
     else:
         return 5
-
 
 def generate_followup(role, response):
     if not response.strip():
@@ -152,10 +151,8 @@ def generate_followup(role, response):
     else:
         return "Good response. You can improve it by being more specific or structured."
 
-
 def generate_sample_ideal_answer(question):
-    # This is a placeholder. You can use a proper AI model or a dictionary of answers here.
-    return "This question tests your understanding of core concepts. Try to use an example from your experience to support your answer."
+    return "This question tests your understanding of core concepts. Use a specific example from your past to support your answer."
 
 def save_interview_score(username, role, question, response, feedback, rating):
     file_path = "data/interview_scores.csv"
