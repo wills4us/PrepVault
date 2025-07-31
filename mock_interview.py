@@ -49,6 +49,7 @@ ROLE_QUESTIONS = {
     ]
 }
 
+# Offline rule-based feedback and follow-up
 FOLLOWUP_TEMPLATES = [
     "Can you provide an example to support your answer?",
     "How has this skill helped you in a past experience?",
@@ -72,57 +73,9 @@ def generate_followup(role, user_response):
 
 def generate_mock_rating(user_response):
     length_score = min(len(user_response.strip()) // 50, 5)
-    quality_score = random.randint(2, 5)  # Simulating feedback range
+    quality_score = random.randint(2, 5)
     avg_score = (length_score + quality_score) / 2
     return round(avg_score, 1)
-
-def show_interview_simulator(username):
-    st.subheader("🎤 AI Interview Simulator")
-    st.markdown("Select a role to begin your simulated interview. You will be asked questions one by one.")
-
-    role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()), key="role_select")
-
-    if "interview_state" not in st.session_state:
-        st.session_state.interview_state = {
-            "questions": [],
-            "current_index": 0,
-            "started": False,
-        }
-
-    if st.button("Start Interview") or not st.session_state.interview_state["started"]:
-        questions = random.sample(ROLE_QUESTIONS.get(role, []), k=min(3, len(ROLE_QUESTIONS[role])))
-        st.session_state.interview_state.update({
-            "questions": questions,
-            "current_index": 0,
-            "started": True
-        })
-
-    if st.session_state.interview_state["started"]:
-        questions = st.session_state.interview_state["questions"]
-        index = st.session_state.interview_state["current_index"]
-
-        if index < len(questions):
-            q = questions[index]
-            st.markdown(f"**Question {index + 1} of {len(questions)}:** {q}")
-            user_response = st.text_area("Your Answer", key=f"response_{index}")
-
-            if st.button("Submit Answer"):
-                if user_response.strip():
-                    feedback = generate_followup(role, user_response)
-                    rating = generate_mock_rating(user_response)
-
-                    # Save response
-                    save_interview_score(username, role, q, user_response, feedback, rating)
-
-                    st.success("✅ Response saved.")
-                    st.markdown(f"🧠 **AI Feedback for {username}:**\n{feedback}")
-                    st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
-
-                    st.session_state.interview_state["current_index"] += 1
-                else:
-                    st.warning("Please enter a response before submitting.")
-        else:
-            st.success("🎉 Interview completed! All responses have been recorded.")
 
 def save_interview_score(username, role, question, response, feedback, score):
     file = "data/interview_scores.csv"
@@ -131,7 +84,7 @@ def save_interview_score(username, role, question, response, feedback, score):
         df = pd.read_csv(file)
     else:
         df = pd.DataFrame(columns=["Name", "Role", "Question", "Response", "Feedback", "Rating"])
-
+    
     new_row = {
         "Name": username,
         "Role": role,
@@ -140,5 +93,62 @@ def save_interview_score(username, role, question, response, feedback, score):
         "Feedback": feedback,
         "Rating": score
     }
+
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     df.to_csv(file, index=False)
+
+def show_interview_simulator(username):
+    st.subheader("🎤 AI Interview Simulator")
+    st.markdown("Select a role to begin your simulated interview. Questions appear one-by-one after each answer.")
+
+    role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()), key="role_select")
+
+    if "interview_state" not in st.session_state:
+        st.session_state.interview_state = {
+            "questions": [],
+            "current_index": 0,
+            "started": False,
+            "response_saved": False,
+        }
+
+    state = st.session_state.interview_state
+
+    if st.button("Start Interview"):
+        state["questions"] = random.sample(ROLE_QUESTIONS.get(role, []), k=min(3, len(ROLE_QUESTIONS[role])))
+        state["current_index"] = 0
+        state["started"] = True
+        state["response_saved"] = False
+
+    if state["started"]:
+        questions = state["questions"]
+        index = state["current_index"]
+
+        if index < len(questions):
+            q = questions[index]
+            st.markdown(f"**Question {index + 1} of {len(questions)}:** {q}")
+            user_response = st.text_area("Your Answer", key=f"response_{index}")
+
+            if not state["response_saved"]:
+                if st.button("Submit Answer"):
+                    if user_response.strip():
+                        feedback = generate_followup(role, user_response)
+                        rating = generate_mock_rating(user_response)
+                        save_interview_score(username, role, q, user_response, feedback, rating)
+
+                        st.session_state.feedback = feedback
+                        st.session_state.rating = rating
+                        state["response_saved"] = True
+
+                        st.success("✅ Response saved.")
+                        st.markdown(f"🧠 **AI Feedback for {username}:**\n{feedback}")
+                        st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
+                    else:
+                        st.warning("Please enter a response before submitting.")
+            else:
+                st.markdown(f"🧠 **AI Feedback for {username}:**\n{st.session_state.feedback}")
+                st.markdown(f"⭐ **Mock Rating:** {st.session_state.rating} / 5")
+                if st.button("Next Question"):
+                    state["current_index"] += 1
+                    state["response_saved"] = False
+        else:
+            st.success("🎉 Interview completed! All responses have been recorded.")
