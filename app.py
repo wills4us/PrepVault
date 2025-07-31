@@ -59,8 +59,7 @@ elif menu == "Resume Analyzer":
 
 elif menu == "Mock Interview":
     if st.session_state.username:
-        import docx2txt  # <- If needed here
-        from mock_interview import show_mock_interview  # <- FIX: Import only when needed
+        from mock_interview import show_mock_interview  # 👈 Move the import here
         show_mock_interview(st.session_state.username)
     else:
         st.warning("Please log in to access mock interviews.")
