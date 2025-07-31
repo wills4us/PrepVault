@@ -18,5 +18,6 @@ PyMuPDF>=1.21.0
 pdf2image>=1.16.0
 pytesseract
 plotly
+docx2txt
 
 
