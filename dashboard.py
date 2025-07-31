@@ -50,6 +50,9 @@ def show_dashboard(name_input):
     st.sidebar.markdown(f"👤 **{username.title()}**")
     st.sidebar.title(f"👋 Welcome, {username}")
     
+        with st.expander("📈 Mock Interview Summary"):
+            show_interview_summary(name_input)
+    
     tab = st.sidebar.selectbox("Choose a tab", [
         "Profile Overview",
         "Resume Analyzer",
@@ -112,3 +115,30 @@ def show_dashboard(name_input):
             del st.session_state[key]
         st.success("✅ You’ve been logged out successfully.")
         st.rerun()
+
+def show_interview_summary(name_input):
+    st.subheader("📝 Mock Interview Results")
+
+    file_path = "data/interview_scores.csv"
+    if not os.path.exists(file_path):
+        st.info("No interview results found yet.")
+        return
+
+    df = pd.read_csv(file_path)
+
+    # Optional: Filter by name if provided
+    if name_input:
+        df = df[df["Name"].str.lower() == name_input.lower()]
+
+    if df.empty:
+        st.warning("No records found for this user.")
+        return
+
+    total_attempts = len(df)
+    avg_rating = round(df["Rating"].mean(), 2)
+
+    st.markdown(f"✅ **Total Attempts:** `{total_attempts}`")
+    st.markdown(f"⭐ **Average Mock Rating:** `{avg_rating} / 5`")
+
+    with st.expander("📋 View Detailed Feedback"):
+        st.dataframe(df[["Role", "Question", "Response", "Feedback", "Rating"]].sort_values(by="Rating", ascending=False), use_container_width=True)
