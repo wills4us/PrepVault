@@ -63,17 +63,12 @@ def extract_text_from_pdf(uploaded_file):
         return ""
 
 def extract_text_from_docx(uploaded_file):
-    if not docx_imported:
-        st.error("docx2txt not available. Install it with `pip install docx2txt`.")
-        return ""
     try:
-        with open("temp_resume.docx", "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        text = docx2txt.process("temp_resume.docx")
-        os.remove("temp_resume.docx")
-        return text.strip().lower()
+        doc = Document(uploaded_file)
+        full_text = " ".join([para.text for para in doc.paragraphs])
+        return full_text.strip().lower()
     except Exception as e:
-        st.error(f"❌ DOCX extraction failed: {e}")
+        st.error(f"❌ Failed to read DOCX file: {e}")
         return ""
 
 def identify_missing_keywords(resume_text, job_role):
@@ -113,14 +108,11 @@ def analyze_resume(username, job_role):
 
         if uploaded_file.name.endswith(".pdf"):
             resume_text = extract_text_from_pdf(uploaded_file)
-        elif uploaded_file.name.endswith(".docx"):
-            resume_text = extract_text_from_docx(uploaded_file)
         else:
-            st.error("❌ Unsupported file format.")
-            return
+            resume_text = extract_text_from_docx(uploaded_file)
 
         if not resume_text:
-            st.error("❌ No readable text found. Try uploading a better formatted document.")
+            st.error("❌ No readable text found. Try uploading a better-formatted file.")
             return
 
         st.markdown("### 🔎 Extracted Resume Preview")
@@ -147,7 +139,7 @@ def analyze_resume(username, job_role):
 
         if best_match != job_role:
             st.markdown("### 💡 Better Match Suggestion")
-            st.info(f"🔁 You may be a better fit for **{best_match}** (**{best_score}% match**)" )
+            st.info(f"🔁 You may be a better fit for **{best_match}** (**{best_score}% match**)")
 
         st.markdown("#### 🧭 Top 3 Role Matches:")
         for role, score in ranked_roles[:3]:
