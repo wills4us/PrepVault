@@ -1,13 +1,16 @@
 import streamlit as st
 import os
 import pandas as pd
+import pytesseract
+import matplotlib.pyplot as plt
+import plotly.express as px
+
 from PyPDF2 import PdfReader
 from sentence_transformers import SentenceTransformer, util
 from pdf2image import convert_from_path
-import pytesseract
+from docx import Document
 from PIL import Image
-import matplotlib.pyplot as plt
-import plotly.express as px
+
 docx_imported = False
 try:
     import docx2txt
