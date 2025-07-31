@@ -1,4 +1,6 @@
 # dashboard.py
+import pandas as pd
+import os
 import streamlit as st
 from my_profile import show_profile, get_user_summary, get_profile_image, show_study_plan
 from resume_analyzer import show_resume_review
@@ -7,21 +9,63 @@ from notifier import check_and_generate_notifications, show_notifications
 # Trigger notifications when dashboard loads
 check_and_generate_notifications()
 
-def show_dashboard(username):
+INTERVIEW_LOG = "data/interview_scores.csv"
+
+def show_interview_scores(username=None):
+    st.subheader("🗂️ Mock Interview Feedback & Scores")
+
+    if not os.path.exists(INTERVIEW_LOG):
+        st.info("No interview scores have been saved yet.")
+        return
+
+    df = pd.read_csv(INTERVIEW_LOG)
+
+    if username:
+        df = df[df["Username"].str.lower() == username.lower()]
+
+    if df.empty:
+        st.warning("No results found for this user.")
+        return
+
+    st.dataframe(df[["Timestamp", "Role", "Question", "Response", "Rating", "Feedback"]], use_container_width=True)
+
+    avg_score = df["Rating"].mean().round(2)
+    st.success(f"📊 Average Mock Rating: **{avg_score} / 5**")
+
+    st.markdown("---")
+    st.download_button("📥 Download Your Interview Feedback", data=df.to_csv(index=False), file_name="interview_feedback.csv", mime="text/csv")
+
+
+
+def show_dashboard(name_input):
+    import streamlit as st
+    from resume_analyzer import show_resume_analysis
+    from mock_interview import show_interview_simulator
+    from dashboard_utils import show_profile_overview, show_progress_summary, show_notifications
+    from dashboard import show_interview_scores  # <- Make sure this is not a circular import
+
+    username = name_input  # Use this to personalize
+
+    st.sidebar.image("assets/logo.png", width=120)
+    st.sidebar.markdown(f"👤 **{username.title()}**")
     st.sidebar.title(f"👋 Welcome, {username}")
+    
     tab = st.sidebar.selectbox("Choose a tab", [
         "Profile Overview",
         "Resume Analyzer",
         "Interview Simulation",
+        "Interview Summary",  # <-- add this
         "Progress Summary",
         "Notifications",
         "Logout"
     ])
 
+
     st.title("🎓 PrepVault Dashboard")
     st.markdown("---")
 
     if tab == "Profile Overview":
+        show_profile_overview(username)
         st.subheader("👤 Your Profile")
 
         col1, col2 = st.columns([1, 3])
@@ -39,6 +83,9 @@ def show_dashboard(username):
 
         st.divider()
         show_profile(username)
+        
+    elif tab == "Interview Summary":
+        show_interview_scores(username)
 
     elif tab == "Resume Analyzer":
         st.subheader("📄 Resume Analyzer (AI-Powered)")
