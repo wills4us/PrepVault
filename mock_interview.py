@@ -4,7 +4,7 @@ import random
 import pandas as pd
 from datetime import datetime
 
-QUESTION_BANK = {
+ROLE_QUESTIONS = {
     "Data Analyst": [
         "What is the difference between INNER JOIN and LEFT JOIN in SQL?",
         "Explain the steps you take when cleaning a dataset.",
@@ -80,44 +80,57 @@ FEEDBACK_TIPS = [
 
 
 def show_mock_interview(username):
-    st.title("🧠 AI-Powered Mock Interview")
+    st.subheader("🎤 AI Interview Simulator")
+    st.markdown("Select a role to begin your simulated interview. You will be asked questions one by one.")
 
-    if "current_question" not in st.session_state:
-        st.session_state.current_question = None
-    if "role" not in st.session_state:
-        st.session_state.role = None
-    if "response" not in st.session_state:
-        st.session_state.response = ""
+    role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()), key="role_select")
 
-    st.markdown("This mock interview tool provides dynamic questions based on your selected role. Your responses will be rated and saved.")
+    if "interview_state" not in st.session_state:
+        st.session_state.interview_state = {
+            "questions": [],
+            "current_index": 0,
+            "started": False,
+            "response": ""
+        }
 
-    role = st.selectbox("Select your target role", list(QUESTION_BANK.keys()))
-    st.session_state.role = role
+    if st.button("Start Interview"):
+        questions = random.sample(ROLE_QUESTIONS.get(role, []), k=min(3, len(ROLE_QUESTIONS[role])))
+        st.session_state.interview_state.update({
+            "questions": questions,
+            "current_index": 0,
+            "started": True,
+            "response": ""
+        })
 
-    if st.button("➡️ Next Question"):
-        st.session_state.current_question = random.choice(QUESTION_BANK[role])
-        st.session_state.response = ""
+    if st.session_state.interview_state["started"]:
+        questions = st.session_state.interview_state["questions"]
+        index = st.session_state.interview_state["current_index"]
 
-    if st.session_state.current_question:
-        st.markdown(f"### ❓ {st.session_state.current_question}")
-        st.session_state.response = st.text_area("Your Answer", value=st.session_state.response, height=200)
+        if index < len(questions):
+            q = questions[index]
+            st.markdown(f"**Question {index + 1} of {len(questions)}:** {q}")
+            user_response = st.text_area("Your Answer", value=st.session_state.interview_state.get("response", ""), key=f"response_{index}")
 
-        if st.button("✅ Submit Answer"):
-            rating = random.randint(3, 5)  # Simulated rating for demo
-            feedback = generate_feedback(st.session_state.response)
+            if st.button("Submit Answer"):
+                if user_response.strip():
+                    feedback = generate_followup(role, user_response)
+                    rating = generate_mock_rating(user_response)
 
-            save_response(
-                username=username,
-                role=st.session_state.role,
-                question=st.session_state.current_question,
-                response=st.session_state.response,
-                rating=rating,
-                feedback=feedback
-            )
+                    save_interview_score(username, role, q, user_response, feedback, rating)
 
-            st.success("Answer submitted and saved! ✅")
-            st.markdown(f"⭐ **AI Rating:** {rating}/5")
-            st.markdown(f"📝 **AI Feedback:** _{feedback}_")
+                    st.success("✅ Response saved.")
+                    st.markdown(f"🧠 **AI Feedback:** {feedback}")
+                    st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
+
+                    st.session_state.interview_state["response"] = ""
+                else:
+                    st.warning("Please enter a response before submitting.")
+
+            if st.button("Next Question"):
+                st.session_state.interview_state["current_index"] += 1
+                st.session_state.interview_state["response"] = ""
+        else:
+            st.success("🎉 Interview completed! All responses have been recorded.")
 
 def generate_feedback(response):
     length = len(response.split())
