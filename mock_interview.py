@@ -2,8 +2,8 @@
 import streamlit as st
 import random
 import pandas as pd
-import os
 from datetime import datetime
+import os
 
 ROLE_QUESTIONS = {
     "Data Analyst": [
@@ -12,9 +12,7 @@ ROLE_QUESTIONS = {
         "How would you handle missing values in a dataset?",
         "Describe a project where you used data visualization to drive decisions.",
         "What is the difference between correlation and causation?",
-        "How do you approach cleaning and preparing a large dataset for analysis?",
         "Can you describe a time you used data to solve a business problem or make a recommendation?",
-        "How do you handle missing or inconsistent data in your analysis?",
         "What’s the most complex dashboard or report you’ve built, and how did it support decision-making?"
     ],
     "Data Scientist": [
@@ -23,9 +21,7 @@ ROLE_QUESTIONS = {
         "How do you evaluate the performance of a machine learning model?",
         "Describe a project where you used machine learning to solve a problem.",
         "What’s the difference between overfitting and underfitting?",
-        "How do you ensure your model is not overfitting?",
-        "Tell me about a time when your analysis or model directly influenced a business decision.",
-        "Describe a project where you built a predictive model. What was the goal, and how did you evaluate its performance?"
+        "Tell me about a time when your analysis influenced a business decision."
     ],
     "Python Developer": [
         "What are Python decorators and how are they used?",
@@ -33,10 +29,7 @@ ROLE_QUESTIONS = {
         "How do you handle exceptions in Python?",
         "Describe your experience with web frameworks like Flask or Django.",
         "What are Python generators and why are they useful?",
-        "What are Python’s key data types, and when would you use each one (list, tuple, set, dictionary)?",
-        "Can you explain the difference between deep copy and shallow copy in Python?",
-        "Describe a project where you used Python to automate a task or process.",
-        "How do you manage dependencies and environments in a Python project?"
+        "Describe a project where you used Python to automate a task or process."
     ],
     "Customer Care Assistant": [
         "How do you handle a difficult customer?",
@@ -69,17 +62,10 @@ FOLLOWUP_TEMPLATES = [
     "Would you do anything differently if faced with that again?"
 ]
 
-FEEDBACK_TIPS = [
-    "Try to provide a concrete example to make your response stronger.",
-    "Keep your answers concise but detailed.",
-    "Structure your answer using the STAR method (Situation, Task, Action, Result).",
-    "Highlight specific tools or metrics to support your response.",
-    "Avoid generic responses—tailor them to the role you're applying for."
-]
 
 def show_mock_interview(username):
     st.subheader("🎤 AI Interview Simulator")
-    st.markdown("Select a role to begin your simulated interview. You will be asked one question at a time.")
+    st.markdown("Select a role to begin your simulated interview.")
 
     role = st.selectbox("💼 Select Interview Role", list(ROLE_QUESTIONS.keys()), key="role_select")
 
@@ -112,8 +98,7 @@ def show_mock_interview(username):
 
         if index < len(questions):
             question = questions[index]
-            st.markdown(f"**Question {index + 1} of {len(questions)}:** {question}")
-
+            st.markdown(f"**🧠 Question {index + 1} of {len(questions)}:** {question}")
             response = st.text_area("📝 Your Answer", value=state.get("response", ""), key=f"response_{index}")
 
             if not state["submitted"]:
@@ -121,57 +106,68 @@ def show_mock_interview(username):
                     if response.strip():
                         feedback = generate_followup(role, response)
                         rating = generate_mock_rating(response)
+                        ideal_hint = generate_sample_ideal_answer(question)
 
-                        save_response(username, role, question, response, rating, feedback)
+                        save_interview_score(username, role, question, response, feedback, rating)
 
                         st.success("✅ Response saved.")
                         st.markdown(f"🧠 **AI Feedback:** {feedback}")
                         st.markdown(f"⭐ **Mock Rating:** {rating} / 5")
+                        st.markdown(f"💡 **Suggested Ideal Answer:** {ideal_hint}")
 
                         state["submitted"] = True
                         state["response"] = response
                     else:
                         st.warning("Please enter a response before submitting.")
-
-            elif state["submitted"]:
+            else:
                 if st.button("Next Question"):
                     state["current_index"] += 1
                     state["response"] = ""
                     state["submitted"] = False
-
         else:
             st.success("🎉 Interview completed! All responses have been recorded.")
 
-def generate_feedback(response):
-    length = len(response.split())
-    if length < 20:
-        return "Try elaborating more with examples or technical details."
-    elif length < 50:
-        return "Good effort. Include metrics, tools, or outcomes for a stronger answer."
-    else:
-        return "Well-structured response. Consider refining the flow and staying concise."
 
 def generate_mock_rating(response):
-    words = len(response.split())
-    if words < 10:
-        return 1
-    elif words < 30:
+    word_count = len(response.strip().split())
+    if word_count < 10:
+        return 2
+    elif word_count < 25:
         return 3
+    elif word_count < 50:
+        return 4
     else:
         return 5
 
-def save_response(username, role, question, response, rating, feedback):
+
+def generate_followup(role, response):
+    if not response.strip():
+        return "You didn't provide a response. Please try to give an example next time."
+    if len(response.split()) < 20:
+        return random.choice(FOLLOWUP_TEMPLATES)
+    elif "team" in response.lower():
+        return "Good mention of teamwork. Consider backing it with a scenario or outcome."
+    elif "challenge" in response.lower():
+        return "Nice point on challenges. Try using the STAR method to structure your response."
+    else:
+        return "Good response. You can improve it by being more specific or structured."
+
+
+def generate_sample_ideal_answer(question):
+    # This is a placeholder. You can use a proper AI model or a dictionary of answers here.
+    return "This question tests your understanding of core concepts. Try to use an example from your experience to support your answer."
+
+def save_interview_score(username, role, question, response, feedback, rating):
     file_path = "data/interview_scores.csv"
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     new_row = {
         "Username": username,
-        "Name": username,
         "Role": role,
         "Question": question,
         "Response": response,
-        "Rating": rating,
         "Feedback": feedback,
+        "Rating": rating,
         "Timestamp": timestamp
     }
 
@@ -182,16 +178,3 @@ def save_response(username, role, question, response, rating, feedback):
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
     df.to_csv(file_path, index=False)
-
-def generate_followup(role, response):
-    if not response.strip():
-        return "You didn't provide a response. Please try to give an example next time."
-
-    if len(response.split()) < 20:
-        return "Your answer is quite brief. Try expanding on your thoughts or giving examples."
-    elif "team" in response.lower():
-        return "Good mention of teamwork. Consider backing it with a scenario or outcome."
-    elif "challenge" in response.lower():
-        return "Nice point on challenges. It could be stronger with a STAR (Situation, Task, Action, Result) structure."
-    else:
-        return "Good response. You can make it even better by being more specific or structured."
