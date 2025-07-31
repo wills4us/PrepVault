@@ -6,6 +6,8 @@ from dashboard import show_dashboard
 from login_screen import show_login
 from resume_analyzer import show_resume_review
 from my_profile import show_profile
+from mock_interview import show_mock_interview
+
 
 # --- App Config ---
 st.set_page_config(page_title="PrepVault", layout="centered")
